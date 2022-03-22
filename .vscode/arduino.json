@@ -1,0 +1,6 @@
+{
+    "board": "arduino:avr:uno",
+    "port": "COM5",
+    "programmer": "arduino:avrispmkii",
+    "sketch": "gyro_test\\gyro_test.ino"
+}
