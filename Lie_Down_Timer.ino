@@ -85,11 +85,20 @@ void loop()
         if (!startFlg) {
             Serial.print("startTimer");
             startFlg = true;
-            /*MsTimer2::set(1000, timer);
-            MsTimer2::start();*/
+            numDisp = 60;
+            MsTimer2::set(1000, timer);
+            MsTimer2::start();
         }
     }
-    delay(2000);
+    if (startFlg) {
+        //「OLED」と通信
+        oled.clearDisplay(); // clear display
+        oled.setTextSize(2);          // text size
+        oled.setTextColor(WHITE);     // text color
+        oled.setCursor(0, 10);        // position to display
+        oled.println(numDisp); // text to display
+        oled.display();               // show on OLED
+    }
 }
 
 /**
@@ -99,12 +108,5 @@ void loop()
 void timer()
 {
     Serial.print("move");
-    //「OLED」と通信
-    oled.clearDisplay(); // clear display
-    oled.setTextSize(2);          // text size
-    oled.setTextColor(WHITE);     // text color
-    oled.setCursor(0, 10);        // position to display
-    oled.println("move"); // text to display
-    oled.display();               // show on OLED
-
+    numDisp -= 1;
 }
