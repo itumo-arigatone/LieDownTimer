@@ -9,16 +9,10 @@
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
 
 //タイマー用
-long timeNow;           //現在時刻
-long timeStart;         //タイマー開始時刻
-long timeStop;          //一時停止時刻
-long timeUpEdge;        //立ち上がりエッジを検出した時間
-int numUpEdge = 0;     //立ち上がりエッジを検出した回数
-int setTime = 300;      //設定時刻(秒単位)
-int timeSet = setTime;  //設定時刻
-int timeDisp = setTime; //表示時刻
-int numDisp;        //表示する数字
+String numDisp;
+int numCount;
 bool startFlg = false;
+bool timeUpFlg = false;
 
 // declare an SSD1306 display object connected to I2C
 Adafruit_SSD1306 oled(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
@@ -70,35 +64,47 @@ void loop()
     */
 
     // 傾きを確認
-    // TODO モジュールが水平(az=1[+-0.15])の場合はタイマーストップ&リセット
-    Serial.print(az/16384.0); Serial.println(" g,  ");     //1LSBを加速度(G)に換算してシリアルモニタに表示
-    if (az/16384.0 < 1.15 && az/16384.0 > 0.85) {
+    // モジュールが水平(az=1[+-0.15])の場合はタイマーストップ&リセット
+    if ((az/16384.0 < 1.15 && az/16384.0 > 0.85)) {
         if (startFlg) {
             startFlg = false;
-            // TODO stop timer
-            Serial.print("stopTimer");
-            // TODO reset timer
+            // stop timer
+            Serial.println("stopTimer");
+            MsTimer2::stop();
+            // reset timer
+            numCount = 0;
+            numDisp = String(numCount);
         }
     }
-    // TODO モジュールが垂直(az=0[+-0.2])の場合はタイマースタート
+    // モジュールが垂直(az=0[+-0.2])の場合はタイマースタート
     if (az/16384.0 > -0.2 && az/16384.0 < 0.2) {
         if (!startFlg) {
-            Serial.print("startTimer");
+            Serial.println("startTimer");
             startFlg = true;
-            numDisp = 60;
+            timeUpFlg = false;
+            numCount = 5;
             MsTimer2::set(1000, timer);
             MsTimer2::start();
         }
     }
-    if (startFlg) {
-        //「OLED」と通信
-        oled.clearDisplay(); // clear display
-        oled.setTextSize(2);          // text size
-        oled.setTextColor(WHITE);     // text color
-        oled.setCursor(0, 10);        // position to display
-        oled.println(numDisp); // text to display
-        oled.display();               // show on OLED
+    if (!timeUpFlg) {
+        numDisp = String(numCount);
     }
+    if (numCount <= 0 && startFlg && !timeUpFlg) {
+        Serial.println("Time up!!");
+        MsTimer2::stop();
+        numDisp = "Time up!!";
+        timeUpFlg = true;
+    }
+
+    //「OLED」と通信
+    oled.clearDisplay(); // clear display
+    oled.setTextSize(2);          // text size
+    oled.setTextColor(WHITE);     // text color
+    oled.setCursor(0, 10);        // position to display
+    oled.println(numDisp); // text to display
+    oled.display();               // show on OLED
+    
 }
 
 /**
@@ -107,6 +113,6 @@ void loop()
  */
 void timer()
 {
-    Serial.print("move");
-    numDisp -= 1;
+    Serial.println("move count");
+    numCount -= 1;
 }
