@@ -3,9 +3,22 @@
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+#include <MsTimer2.h>
 
 #define SCREEN_WIDTH 128 // OLED display width,  in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
+
+//タイマー用
+long timeNow;           //現在時刻
+long timeStart;         //タイマー開始時刻
+long timeStop;          //一時停止時刻
+long timeUpEdge;        //立ち上がりエッジを検出した時間
+int numUpEdge = 0;     //立ち上がりエッジを検出した回数
+int setTime = 300;      //設定時刻(秒単位)
+int timeSet = setTime;  //設定時刻
+int timeDisp = setTime; //表示時刻
+int numDisp;        //表示する数字
+bool startFlg = false;
 
 // declare an SSD1306 display object connected to I2C
 Adafruit_SSD1306 oled(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
@@ -47,19 +60,51 @@ void loop()
     //データの表示 1LSBの値はデータシートに記載
     //AFS_SEL設定 = 0, ±2g, 16384LSB/g
     //FS_SEL設定  = 0, ±250deg/s, 131LSB/deg/s 
+    /*
     Serial.print(ax/16384.0); Serial.print(" g,  ");     //1LSBを加速度(G)に換算してシリアルモニタに表示
     Serial.print(ay/16384.0); Serial.print(" g,  ");     //1LSBを加速度(G)に換算してシリアルモニタに表示
     Serial.print(az/16384.0); Serial.print(" g,  ");     //1LSBを加速度(G)に換算してシリアルモニタに表示
     Serial.print(gx/131.0); Serial.print(" deg/s,  ");   //1LSBを角速度(deg/s)に換算してシリアルモニタに表示
     Serial.print(gy/131.0); Serial.print(" deg/s,  ");   //1LSBを角速度(deg/s)に換算してシリアルモニタに表示
     Serial.print(gz/131.0); Serial.println(" deg/s,  "); //1LSBを角速度(deg/s)に換算してシリアルモニタに表示
+    */
 
-    // 2つめのモジュールの「OLED」と通信
+    // 傾きを確認
+    // TODO モジュールが水平(az=1[+-0.15])の場合はタイマーストップ&リセット
+    Serial.print(az/16384.0); Serial.println(" g,  ");     //1LSBを加速度(G)に換算してシリアルモニタに表示
+    if (az/16384.0 < 1.15 && az/16384.0 > 0.85) {
+        if (startFlg) {
+            startFlg = false;
+            // TODO stop timer
+            Serial.print("stopTimer");
+            // TODO reset timer
+        }
+    }
+    // TODO モジュールが垂直(az=0[+-0.2])の場合はタイマースタート
+    if (az/16384.0 > -0.2 && az/16384.0 < 0.2) {
+        if (!startFlg) {
+            Serial.print("startTimer");
+            startFlg = true;
+            /*MsTimer2::set(1000, timer);
+            MsTimer2::start();*/
+        }
+    }
+    delay(2000);
+}
+
+/**
+ * @brief 
+ * タイマー機能
+ */
+void timer()
+{
+    Serial.print("move");
+    //「OLED」と通信
     oled.clearDisplay(); // clear display
-    oled.setTextSize(3);          // text size
+    oled.setTextSize(2);          // text size
     oled.setTextColor(WHITE);     // text color
     oled.setCursor(0, 10);        // position to display
-    oled.println(ax/16384.0); // text to display
+    oled.println("move"); // text to display
     oled.display();               // show on OLED
-    delay(500);
+
 }
