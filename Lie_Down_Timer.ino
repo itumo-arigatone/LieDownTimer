@@ -13,6 +13,20 @@ String numDisp;
 int numCount;
 bool startFlg = false;
 bool timeUpFlg = false;
+bool flashFlg = false;
+
+// タイマー用LED設定
+int threeLED = 4;
+int fiveLED = 5;
+int tenLED = 6;
+int fifteenLED = 7;
+int twntyFiveLED = 8;
+int thirtyLED = 9;
+// beep用(tone()がtimer2と競合するらしいが、timer2をstopした後ならいける？かも？)
+int beep = 10;
+
+int leftSwitch = 12;
+int rightSwitch = 13;
 
 // declare an SSD1306 display object connected to I2C
 Adafruit_SSD1306 oled(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
@@ -31,7 +45,17 @@ void setup()
     Wire.write(0x00);             //0を書き込むことでセンサ動作開始
     Wire.endTransmission();       //スレーブデバイスに対する送信を完了
 
+    // LEDの初期設定
+    pinMode(threeLED, OUTPUT);
+    pinMode(fiveLED, OUTPUT);
+    pinMode(tenLED, OUTPUT);
+    pinMode(fifteenLED, OUTPUT);
+    pinMode(twntyFiveLED, OUTPUT);
+    pinMode(thirtyLED, OUTPUT);
+
+    pinMode(beep, OUTPUT);
 }
+
 void loop()
 {
     // スタートアドレスの設定とデータの要求処理
@@ -74,15 +98,33 @@ void loop()
             // reset timer
             numCount = 0;
             numDisp = String(numCount);
+            refreshLED();
+        }
+
+        /*if (digitalRead(leftSwitch) == LOW) {
+            numCount += 1;
+            delay(500);
+        }*/
+        if (digitalRead(rightSwitch) == LOW) {
+            numCount += 1;
+        }
+        //離すのを待つ
+        while(digitalRead(rightSwitch)==LOW){
+            if(digitalRead(rightSwitch)==HIGH){
+                break;
+            }
         }
     }
     // モジュールが垂直(az=0[+-0.2])の場合はタイマースタート
     if (az/16384.0 > -0.2 && az/16384.0 < 0.2) {
         if (!startFlg) {
             Serial.println("startTimer");
+            digitalWrite(threeLED, HIGH);
             startFlg = true;
             timeUpFlg = false;
-            numCount = 5;
+            if (numCount <= 0) {
+                numCount = 5;
+            }
             MsTimer2::set(1000, timer);
             MsTimer2::start();
         }
@@ -95,13 +137,18 @@ void loop()
         MsTimer2::stop();
         numDisp = "Time up!!";
         timeUpFlg = true;
+        MsTimer2::set(500, flashLED);
+        MsTimer2::start();
     }
 
     //「OLED」と通信
     oled.clearDisplay(); // clear display
-    oled.setTextSize(2);          // text size
+    oled.setTextSize(3);          // text size
     oled.setTextColor(WHITE);     // text color
     oled.setCursor(0, 10);        // position to display
+    // oled.println(ax/16384.0);
+    // oled.println(ay/16384.0);
+    // oled.println(az/16384.0);
     oled.println(numDisp); // text to display
     oled.display();               // show on OLED
     
@@ -115,4 +162,36 @@ void timer()
 {
     Serial.println("move count");
     numCount -= 1;
+}
+
+void refreshLED() {
+    digitalWrite(threeLED, LOW);
+    digitalWrite(fiveLED, LOW);
+    digitalWrite(tenLED, LOW);
+    digitalWrite(fifteenLED, LOW);
+    digitalWrite(twntyFiveLED, LOW);
+    digitalWrite(thirtyLED, LOW);
+    digitalWrite(beep, LOW);
+}
+
+void flashLED() {
+    if (flashFlg) {        
+        digitalWrite(threeLED, LOW);
+        digitalWrite(fiveLED, LOW);
+        digitalWrite(tenLED, LOW);
+        digitalWrite(fifteenLED, LOW);
+        digitalWrite(twntyFiveLED, LOW);
+        digitalWrite(thirtyLED, LOW);
+        digitalWrite(beep, LOW);
+        flashFlg = false;
+    } else {
+        digitalWrite(threeLED, HIGH);
+        digitalWrite(fiveLED, HIGH);
+        digitalWrite(tenLED, HIGH);
+        digitalWrite(fifteenLED, HIGH);
+        digitalWrite(twntyFiveLED, HIGH);
+        digitalWrite(thirtyLED, HIGH);
+        digitalWrite(beep, HIGH);
+        flashFlg = true;
+    }
 }
