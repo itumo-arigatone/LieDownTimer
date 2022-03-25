@@ -25,8 +25,8 @@ int thirtyLED = 9;
 // beep用(tone()がtimer2と競合するらしいが、timer2をstopした後ならいける？かも？)
 int beep = 10;
 
-int leftSwitch = 12;
-int rightSwitch = 13;
+int leftSwitch = 13;
+int rightSwitch = 12;
 
 // declare an SSD1306 display object connected to I2C
 Adafruit_SSD1306 oled(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
@@ -54,6 +54,9 @@ void setup()
     pinMode(thirtyLED, OUTPUT);
 
     pinMode(beep, OUTPUT);
+
+    pinMode(rightSwitch, INPUT_PULLUP); //９番ピンをHighにする（プルアップ）
+    pinMode(leftSwitch, INPUT_PULLUP); //８番ピンをHighにする（プルアップ）
 }
 
 void loop()
@@ -92,6 +95,7 @@ void loop()
     if ((az/16384.0 < 1.15 && az/16384.0 > 0.85)) {
         if (startFlg) {
             startFlg = false;
+            timeUpFlg = false;
             // stop timer
             Serial.println("stopTimer");
             MsTimer2::stop();
@@ -101,10 +105,17 @@ void loop()
             refreshLED();
         }
 
-        /*if (digitalRead(leftSwitch) == LOW) {
-            numCount += 1;
-            delay(500);
-        }*/
+
+        if (digitalRead(leftSwitch) == LOW) {
+            numCount += 60;
+        }
+        //離すのを待つ
+        while(digitalRead(leftSwitch)==LOW){
+            if(digitalRead(leftSwitch)==HIGH){
+                break;
+            }
+        }
+
         if (digitalRead(rightSwitch) == LOW) {
             numCount += 1;
         }
@@ -118,38 +129,18 @@ void loop()
     // モジュールが垂直(az=0[+-0.2])の場合はタイマースタート
     if (az/16384.0 > -0.2 && az/16384.0 < 0.2) {
         if (!startFlg) {
-            Serial.println("startTimer");
-            digitalWrite(threeLED, HIGH);
-            startFlg = true;
-            timeUpFlg = false;
-            if (numCount <= 0) {
-                numCount = 5;
-            }
-            MsTimer2::set(1000, timer);
-            MsTimer2::start();
+            countDown(ax, ay);
         }
     }
-    if (!timeUpFlg) {
-        numDisp = String(numCount);
-    }
-    if (numCount <= 0 && startFlg && !timeUpFlg) {
-        Serial.println("Time up!!");
-        MsTimer2::stop();
-        numDisp = "Time up!!";
-        timeUpFlg = true;
-        MsTimer2::set(500, flashLED);
-        MsTimer2::start();
-    }
 
+    String Display = createDisplayLayout(numCount);
     //「OLED」と通信
     oled.clearDisplay(); // clear display
-    oled.setTextSize(3);          // text size
+    oled.setTextSize(4);          // text size
     oled.setTextColor(WHITE);     // text color
     oled.setCursor(0, 10);        // position to display
-    // oled.println(ax/16384.0);
-    // oled.println(ay/16384.0);
     // oled.println(az/16384.0);
-    oled.println(numDisp); // text to display
+    oled.println(Display); // text to display
     oled.display();               // show on OLED
     
 }
@@ -194,4 +185,103 @@ void flashLED() {
         digitalWrite(beep, HIGH);
         flashFlg = true;
     }
+}
+
+String createDisplayLayout(int count) {
+    if (count <= 0 && startFlg && !timeUpFlg) {
+        MsTimer2::stop();
+        timeUpFlg = true;
+        MsTimer2::set(500, flashLED);
+        MsTimer2::start();
+
+        return "Time up";
+    }
+    if (timeUpFlg) {
+        return "Time up";
+    }
+    // mm:ssにする
+    String min = "00";
+    String sec = "00";
+    if (count > 59) {
+        min = String(count / 60);
+        sec = String(count % 60);
+    } else {
+        sec = String(count);
+    }
+    // 0埋め
+    min = min.length() > 1 ? min : "0" + min;
+    sec = sec.length() > 1 ? sec : "0" + sec;
+    return min + ":" + sec;
+}
+
+int countDown(int ax, int ay) {
+    // x y の角度を確認。
+    // 3 min x=-1 y=0
+    if ((ax/16384.0 > -1.2 && ax/16384.0 < -0.8) &&
+    (ay/16384.0 > -0.2 && ay/16384.0 < 0.2)) {
+        Serial.println("startTimer");
+        digitalWrite(threeLED, HIGH);
+        startFlg = true;
+        timeUpFlg = false;
+        if (numCount <= 0) {
+            numCount = 180;
+        }
+    }
+    // 5 min x=-0.5 y=0.5
+    if ((ax/16384.0 > -0.7 && ax/16384.0 < -0.3) &&
+    (ay/16384.0 > 0.3 && ay/16384.0 < 0.7)) {
+        Serial.println("startTimer");
+        digitalWrite(fiveLED, HIGH);
+        startFlg = true;
+        timeUpFlg = false;
+        if (numCount <= 0) {
+            numCount = 300;
+        }
+    }
+    // 10 min x=0.5 y=0.5
+    if ((ax/16384.0 > 0.3 && ax/16384.0 < 0.7) &&
+    (ay/16384.0 > 0.3 && ay/16384.0 < 0.7)) {
+        Serial.println("startTimer");
+        digitalWrite(tenLED, HIGH);
+        startFlg = true;
+        timeUpFlg = false;
+        if (numCount <= 0) {
+            numCount = 600;
+        }
+    }
+    // 15 min x=1 y=0
+    if ((ax/16384.0 > 0.8 && ax/16384.0 < 1.2) &&
+    (ay/16384.0 > -0.2 && ay/16384.0 < 0.2)) {
+        Serial.println("startTimer");
+        digitalWrite(fifteenLED, HIGH);
+        startFlg = true;
+        timeUpFlg = false;
+        if (numCount <= 0) {
+            numCount = 900;
+        }
+    }
+    // 25 min x=0.5 y=-0.5
+    if ((ax/16384.0 > 0.3 && ax/16384.0 < 0.7) &&
+    (ay/16384.0 > -0.7 && ay/16384.0 < -0.3)) {
+        Serial.println("startTimer");
+        digitalWrite(twntyFiveLED, HIGH);
+        startFlg = true;
+        timeUpFlg = false;
+        if (numCount <= 0) {
+            numCount = 1500;
+        }
+    }
+    // 30 min x=-0.5 y=-0.5
+    if ((ax/16384.0 > -0.7 && ax/16384.0 < -0.3) &&
+    (ay/16384.0 > -0.7 && ay/16384.0 < -0.3)) {
+        Serial.println("startTimer");
+        digitalWrite(thirtyLED, HIGH);
+        startFlg = true;
+        timeUpFlg = false;
+        if (numCount <= 0) {
+            numCount = 1800;
+        }
+    }
+    MsTimer2::set(1000, timer);
+    MsTimer2::start();
 }
