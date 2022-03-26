@@ -14,6 +14,7 @@ int numCount;
 bool startFlg = false;
 bool timeUpFlg = false;
 bool flashFlg = false;
+bool clickFlg = false;
 
 // タイマー用LED設定
 int threeLED = 4;
@@ -27,6 +28,9 @@ int beep = 10;
 
 int leftSwitch = 13;
 int rightSwitch = 12;
+
+int timerMode = 0;
+int timerModeBefore = 0;
 
 // declare an SSD1306 display object connected to I2C
 Adafruit_SSD1306 oled(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
@@ -81,14 +85,6 @@ void loop()
     //データの表示 1LSBの値はデータシートに記載
     //AFS_SEL設定 = 0, ±2g, 16384LSB/g
     //FS_SEL設定  = 0, ±250deg/s, 131LSB/deg/s 
-    /*
-    Serial.print(ax/16384.0); Serial.print(" g,  ");     //1LSBを加速度(G)に換算してシリアルモニタに表示
-    Serial.print(ay/16384.0); Serial.print(" g,  ");     //1LSBを加速度(G)に換算してシリアルモニタに表示
-    Serial.print(az/16384.0); Serial.print(" g,  ");     //1LSBを加速度(G)に換算してシリアルモニタに表示
-    Serial.print(gx/131.0); Serial.print(" deg/s,  ");   //1LSBを角速度(deg/s)に換算してシリアルモニタに表示
-    Serial.print(gy/131.0); Serial.print(" deg/s,  ");   //1LSBを角速度(deg/s)に換算してシリアルモニタに表示
-    Serial.print(gz/131.0); Serial.println(" deg/s,  "); //1LSBを角速度(deg/s)に換算してシリアルモニタに表示
-    */
 
     // 傾きを確認
     // モジュールが水平(az=1[+-0.15])の場合はタイマーストップ&リセット
@@ -101,12 +97,14 @@ void loop()
             MsTimer2::stop();
             // reset timer
             numCount = 0;
-            numDisp = String(numCount);
+            timerModeBefore = 0;
+            timerMode = 0;
             refreshLED();
         }
 
 
         if (digitalRead(leftSwitch) == LOW) {
+            clickFlg = true;
             numCount += 60;
         }
         //離すのを待つ
@@ -117,6 +115,7 @@ void loop()
         }
 
         if (digitalRead(rightSwitch) == LOW) {
+            clickFlg = true;
             numCount += 1;
         }
         //離すのを待つ
@@ -128,9 +127,7 @@ void loop()
     }
     // モジュールが垂直(az=0[+-0.2])の場合はタイマースタート
     if (az/16384.0 > -0.2 && az/16384.0 < 0.2) {
-        if (!startFlg) {
-            countDown(ax, ay);
-        }
+        countDown(ax, ay);
     }
 
     String Display = createDisplayLayout(numCount);
@@ -139,7 +136,6 @@ void loop()
     oled.setTextSize(4);          // text size
     oled.setTextColor(WHITE);     // text color
     oled.setCursor(0, 10);        // position to display
-    // oled.println(az/16384.0);
     oled.println(Display); // text to display
     oled.display();               // show on OLED
     
@@ -151,7 +147,6 @@ void loop()
  */
 void timer()
 {
-    Serial.println("move count");
     numCount -= 1;
 }
 
@@ -214,74 +209,90 @@ String createDisplayLayout(int count) {
     return min + ":" + sec;
 }
 
-int countDown(int ax, int ay) {
+void countDown(int ax, int ay) {
+    int clickNum;
+    if (clickFlg) {
+        clickNum = numCount;
+    }
     // x y の角度を確認。
     // 3 min x=-1 y=0
     if ((ax/16384.0 > -1.2 && ax/16384.0 < -0.8) &&
     (ay/16384.0 > -0.2 && ay/16384.0 < 0.2)) {
-        Serial.println("startTimer");
-        digitalWrite(threeLED, HIGH);
-        startFlg = true;
-        timeUpFlg = false;
-        if (numCount <= 0) {
+        timerMode = 3;
+        if (timerMode != timerModeBefore) {
+            refreshLED();
+            digitalWrite(threeLED, HIGH);
             numCount = 180;
         }
     }
     // 5 min x=-0.5 y=0.5
     if ((ax/16384.0 > -0.7 && ax/16384.0 < -0.3) &&
     (ay/16384.0 > 0.3 && ay/16384.0 < 0.7)) {
-        Serial.println("startTimer");
-        digitalWrite(fiveLED, HIGH);
-        startFlg = true;
-        timeUpFlg = false;
-        if (numCount <= 0) {
+        timerMode = 5;
+        if (timerMode != timerModeBefore) {
+            refreshLED();
+            digitalWrite(fiveLED, HIGH);
             numCount = 300;
         }
     }
     // 10 min x=0.5 y=0.5
     if ((ax/16384.0 > 0.3 && ax/16384.0 < 0.7) &&
     (ay/16384.0 > 0.3 && ay/16384.0 < 0.7)) {
-        Serial.println("startTimer");
-        digitalWrite(tenLED, HIGH);
-        startFlg = true;
-        timeUpFlg = false;
-        if (numCount <= 0) {
+        timerMode = 10;
+        if (timerMode != timerModeBefore) {
+            refreshLED();
+            digitalWrite(tenLED, HIGH);
             numCount = 600;
         }
     }
     // 15 min x=1 y=0
     if ((ax/16384.0 > 0.8 && ax/16384.0 < 1.2) &&
     (ay/16384.0 > -0.2 && ay/16384.0 < 0.2)) {
-        Serial.println("startTimer");
-        digitalWrite(fifteenLED, HIGH);
-        startFlg = true;
-        timeUpFlg = false;
-        if (numCount <= 0) {
+        timerMode = 15;
+        if (timerMode != timerModeBefore) {
+            refreshLED();
+            digitalWrite(fifteenLED, HIGH);
             numCount = 900;
         }
     }
     // 25 min x=0.5 y=-0.5
     if ((ax/16384.0 > 0.3 && ax/16384.0 < 0.7) &&
     (ay/16384.0 > -0.7 && ay/16384.0 < -0.3)) {
-        Serial.println("startTimer");
-        digitalWrite(twntyFiveLED, HIGH);
-        startFlg = true;
-        timeUpFlg = false;
-        if (numCount <= 0) {
+        timerMode = 25;
+        if (timerMode != timerModeBefore) {
+            refreshLED();
+            digitalWrite(twntyFiveLED, HIGH);
             numCount = 1500;
         }
     }
     // 30 min x=-0.5 y=-0.5
     if ((ax/16384.0 > -0.7 && ax/16384.0 < -0.3) &&
     (ay/16384.0 > -0.7 && ay/16384.0 < -0.3)) {
-        Serial.println("startTimer");
-        digitalWrite(thirtyLED, HIGH);
-        startFlg = true;
-        timeUpFlg = false;
-        if (numCount <= 0) {
+        timerMode = 30;
+        if (timerMode != timerModeBefore) {
+            refreshLED();
+            digitalWrite(thirtyLED, HIGH);
             numCount = 1800;
         }
     }
-    MsTimer2::set(1000, timer);
-    MsTimer2::start();
+    if (clickFlg) {
+        timerModeBefore = timerMode;
+        clickFlg = false;
+        numCount = clickNum;
+        timeUpFlg = false;
+        startFlg = true;
+        MsTimer2::stop();
+        MsTimer2::set(1000, timer);
+        MsTimer2::start();
+        return;
+    }
+    if (timerMode != timerModeBefore) {
+        timerModeBefore = timerMode;
+        timeUpFlg = false;
+        startFlg = true;
+        MsTimer2::stop();
+        MsTimer2::set(1000, timer);
+        MsTimer2::start();
+        return;
+    }
 }
