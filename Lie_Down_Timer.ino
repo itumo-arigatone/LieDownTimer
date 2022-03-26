@@ -97,8 +97,8 @@ void loop()
             MsTimer2::stop();
             // reset timer
             numCount = 0;
-            // timerModeBefore = 0;
-            // timerMode = 0;
+            timerModeBefore = 0;
+            timerMode = 0;
             refreshLED();
         }
 
