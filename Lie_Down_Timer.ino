@@ -97,8 +97,8 @@ void loop()
             MsTimer2::stop();
             // reset timer
             numCount = 0;
-            timerModeBefore = 0;
-            timerMode = 0;
+            // timerModeBefore = 0;
+            // timerMode = 0;
             refreshLED();
         }
 
@@ -211,6 +211,7 @@ String createDisplayLayout(int count) {
 
 void countDown(int ax, int ay) {
     int clickNum;
+    bool SetTimeflg = false;
     if (clickFlg) {
         clickNum = numCount;
     }
@@ -221,6 +222,7 @@ void countDown(int ax, int ay) {
         timerMode = 3;
         if (timerMode != timerModeBefore) {
             refreshLED();
+            SetTimeflg = true;
             digitalWrite(threeLED, HIGH);
             numCount = 180;
         }
@@ -231,6 +233,7 @@ void countDown(int ax, int ay) {
         timerMode = 5;
         if (timerMode != timerModeBefore) {
             refreshLED();
+            SetTimeflg = true;
             digitalWrite(fiveLED, HIGH);
             numCount = 300;
         }
@@ -241,6 +244,7 @@ void countDown(int ax, int ay) {
         timerMode = 10;
         if (timerMode != timerModeBefore) {
             refreshLED();
+            SetTimeflg = true;
             digitalWrite(tenLED, HIGH);
             numCount = 600;
         }
@@ -251,6 +255,7 @@ void countDown(int ax, int ay) {
         timerMode = 15;
         if (timerMode != timerModeBefore) {
             refreshLED();
+            SetTimeflg = true;
             digitalWrite(fifteenLED, HIGH);
             numCount = 900;
         }
@@ -261,6 +266,7 @@ void countDown(int ax, int ay) {
         timerMode = 25;
         if (timerMode != timerModeBefore) {
             refreshLED();
+            SetTimeflg = true;
             digitalWrite(twntyFiveLED, HIGH);
             numCount = 1500;
         }
@@ -271,11 +277,13 @@ void countDown(int ax, int ay) {
         timerMode = 30;
         if (timerMode != timerModeBefore) {
             refreshLED();
+            SetTimeflg = true;
             digitalWrite(thirtyLED, HIGH);
             numCount = 1800;
         }
     }
-    if (clickFlg) {
+    if (clickFlg && SetTimeflg) {
+        Serial.println("inclick");
         timerModeBefore = timerMode;
         clickFlg = false;
         numCount = clickNum;
@@ -287,6 +295,7 @@ void countDown(int ax, int ay) {
         return;
     }
     if (timerMode != timerModeBefore) {
+        Serial.println("changemode");
         timerModeBefore = timerMode;
         timeUpFlg = false;
         startFlg = true;
