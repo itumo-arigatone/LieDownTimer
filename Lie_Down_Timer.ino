@@ -32,6 +32,12 @@ int rightSwitch = 12;
 int timerMode = 0;
 int timerModeBefore = 0;
 
+// oled
+int textSize = 4;
+int textPositionX = 5;
+int textPositionY = 20;
+int rotation = 0;
+
 // declare an SSD1306 display object connected to I2C
 Adafruit_SSD1306 oled(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
@@ -59,8 +65,8 @@ void setup()
 
     pinMode(beep, OUTPUT);
 
-    pinMode(rightSwitch, INPUT_PULLUP); //９番ピンをHighにする（プルアップ）
-    pinMode(leftSwitch, INPUT_PULLUP); //８番ピンをHighにする（プルアップ）
+    pinMode(rightSwitch, INPUT_PULLUP); //9番ピンをHighにする（プルアップ）
+    pinMode(leftSwitch, INPUT_PULLUP); //8番ピンをHighにする（プルアップ）
 }
 
 void loop()
@@ -92,6 +98,10 @@ void loop()
         if (startFlg) {
             startFlg = false;
             timeUpFlg = false;
+            // oled settings
+            textSize = 4;
+            textPositionX = 5;
+            textPositionY = 20;
             // stop timer
             Serial.println("stopTimer");
             MsTimer2::stop();
@@ -133,9 +143,10 @@ void loop()
     String Display = createDisplayLayout(numCount);
     //「OLED」と通信
     oled.clearDisplay(); // clear display
-    oled.setTextSize(4);          // text size
+    oled.setTextSize(textSize);          // text size
     oled.setTextColor(WHITE);     // text color
-    oled.setCursor(0, 10);        // position to display
+    oled.setCursor(textPositionX, textPositionY);        // position to display
+    oled.setRotation(rotation);
     oled.println(Display); // text to display
     oled.display();               // show on OLED
     
@@ -188,10 +199,15 @@ String createDisplayLayout(int count) {
         timeUpFlg = true;
         MsTimer2::set(500, flashLED);
         MsTimer2::start();
+        textSize = 2;
+        // text position center
+        textPositionX = 20;
+        textPositionY = 25;
 
         return "Time up";
     }
     if (timeUpFlg) {
+        textSize = 2;
         return "Time up";
     }
     // mm:ssにする
@@ -220,6 +236,7 @@ void countDown(int ax, int ay) {
     if ((ax/16384.0 > -1.2 && ax/16384.0 < -0.8) &&
     (ay/16384.0 > -0.2 && ay/16384.0 < 0.2)) {
         timerMode = 3;
+        rotation = 0;
         if (timerMode != timerModeBefore) {
             refreshLED();
             SetTimeflg = true;
@@ -231,6 +248,7 @@ void countDown(int ax, int ay) {
     if ((ax/16384.0 > -0.7 && ax/16384.0 < -0.3) &&
     (ay/16384.0 > 0.3 && ay/16384.0 < 0.7)) {
         timerMode = 5;
+        rotation = 0;
         if (timerMode != timerModeBefore) {
             refreshLED();
             SetTimeflg = true;
@@ -242,6 +260,8 @@ void countDown(int ax, int ay) {
     if ((ax/16384.0 > 0.3 && ax/16384.0 < 0.7) &&
     (ay/16384.0 > 0.3 && ay/16384.0 < 0.7)) {
         timerMode = 10;
+        // ディスプレイをひっくり返す
+        rotation = 2;
         if (timerMode != timerModeBefore) {
             refreshLED();
             SetTimeflg = true;
@@ -253,6 +273,8 @@ void countDown(int ax, int ay) {
     if ((ax/16384.0 > 0.8 && ax/16384.0 < 1.2) &&
     (ay/16384.0 > -0.2 && ay/16384.0 < 0.2)) {
         timerMode = 15;
+        // ディスプレイをひっくり返す
+        rotation = 2;
         if (timerMode != timerModeBefore) {
             refreshLED();
             SetTimeflg = true;
@@ -264,6 +286,8 @@ void countDown(int ax, int ay) {
     if ((ax/16384.0 > 0.3 && ax/16384.0 < 0.7) &&
     (ay/16384.0 > -0.7 && ay/16384.0 < -0.3)) {
         timerMode = 25;
+        // ディスプレイをひっくり返す
+        rotation = 2;
         if (timerMode != timerModeBefore) {
             refreshLED();
             SetTimeflg = true;
@@ -275,6 +299,7 @@ void countDown(int ax, int ay) {
     if ((ax/16384.0 > -0.7 && ax/16384.0 < -0.3) &&
     (ay/16384.0 > -0.7 && ay/16384.0 < -0.3)) {
         timerMode = 30;
+        rotation = 0;
         if (timerMode != timerModeBefore) {
             refreshLED();
             SetTimeflg = true;
@@ -289,6 +314,11 @@ void countDown(int ax, int ay) {
         numCount = clickNum;
         timeUpFlg = false;
         startFlg = true;
+
+        // oled settings
+        textSize = 4;
+        textPositionX = 5;
+        textPositionY = 20;
         MsTimer2::stop();
         MsTimer2::set(1000, timer);
         MsTimer2::start();
@@ -299,6 +329,10 @@ void countDown(int ax, int ay) {
         timerModeBefore = timerMode;
         timeUpFlg = false;
         startFlg = true;
+        // oled settings
+        textSize = 4;
+        textPositionX = 5;
+        textPositionY = 20;
         MsTimer2::stop();
         MsTimer2::set(1000, timer);
         MsTimer2::start();
