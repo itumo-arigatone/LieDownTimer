@@ -2,7 +2,7 @@
     "board": "arduino:avr:uno",
     "port": "COM5",
     "programmer": "arduino:avrispmkii",
-    "sketch": "Lie_Down_Timer.ino",
+    "sketch": "LieDownTimer.ino",
     "sketch_bk1": "gyro_test\\gyro_test.ino",
     "sketch_bk2": "oled_test\\oled_test.ino"
 }
